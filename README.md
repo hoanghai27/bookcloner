@@ -19,11 +19,11 @@ go install
 # Usage
 Basic
 ```
-./bookcloner book-url [outputDir]
+./bookcloner book-url [outputPath]
 ```
 Example
 ```
-./bookcloner http://truyenyy.com/truyen/ac-ma-phap-tac/ am-ma-phap-tac
+./bookcloner http://truyenyy.com/truyen/ac-ma-phap-tac/ am-ma-phap-tac.html
 ```
 
 # Help
