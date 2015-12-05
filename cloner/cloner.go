@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 )
 
+// Start clone all of book chapers from url to output dir
 func Start(url string, outDir string) {
 	outDir, _ = filepath.Abs(outDir)
 	fmt.Printf("Clone book from %s to %s? (yes/no): ", url, outDir)

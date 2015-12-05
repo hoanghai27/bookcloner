@@ -7,6 +7,7 @@ import (
 	"github.com/hoanghai27/bookcloner/cloner"
 )
 
+// main function will be call when program start
 func main() {
 	command := os.Args[1]
 
@@ -20,6 +21,8 @@ func main() {
 	}
 }
 
+// getParams get all ordered params from os.Args
+// It returns 3 values: is all params is valid?, the url and the output path
 func getParams() (bool, string, string) {
 	url := os.Args[1]
 	outDir := "output";
@@ -38,11 +41,14 @@ func getParams() (bool, string, string) {
 	return true, url, outDir;
 }
 
+// linkValid check url provide form user is valid or not
+// It returns true if url is valid or false if it is invalid
 func linkValid(url string) bool {
 	valid, _ := regexp.MatchString("http:\\/\\/truyenyy.com\\/truyen\\/(.*?)\\/", url)
 	return valid
 }
 
+// showHelp show help text
 func showHelp() {
 	fmt.Printf("Usage: bookcloner link [outputDir]\n")
 	fmt.Printf("Params: \n")
