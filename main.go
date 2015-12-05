@@ -14,9 +14,9 @@ func main() {
 	if command == "help" || command == "--help" || command == "-h" {
 		showHelp();
 	} else {
-		valid, url, outDir := getParams()
+		valid, url, outFile := getParams()
 		if valid {
-			cloner.Start(url, outDir);
+			cloner.Start(url, outFile);
 		}
 	}
 }
@@ -25,7 +25,7 @@ func main() {
 // It returns 3 values: is all params is valid?, the url and the output path
 func getParams() (bool, string, string) {
 	url := os.Args[1]
-	outDir := "output";
+	outFile := "book.html";
 
 	if linkValid(url) == false {
 		fmt.Printf("URL \"%s\" is not valid.\n", url);
@@ -35,10 +35,10 @@ func getParams() (bool, string, string) {
 	}
 
 	if len(os.Args) >= 3 {
-		outDir = os.Args[2];
+		outFile = os.Args[2];
 	}
 
-	return true, url, outDir;
+	return true, url, outFile;
 }
 
 // linkValid check url provide form user is valid or not
@@ -50,9 +50,9 @@ func linkValid(url string) bool {
 
 // showHelp show help text
 func showHelp() {
-	fmt.Printf("Usage: bookcloner link [outputDir]\n")
+	fmt.Printf("Usage: bookcloner link [outputFile]\n")
 	fmt.Printf("Params: \n")
 	fmt.Printf("- link: Book url from truyenyy.com, example: http://truyenyy.com/truyen/ten-truyen/\n")
-	fmt.Printf("- outputDir (optional): Output path\n")
-	fmt.Printf("Example:  bookcloner http://truyenyy.com/truyen/ac-ma-phap-tac/ am-ma-phap-tac\n")
+	fmt.Printf("- outputFile (optional): Output path\n")
+	fmt.Printf("Example:  bookcloner http://truyenyy.com/truyen/ac-ma-phap-tac/ am-ma-phap-tac.html\n")
 }

@@ -8,6 +8,10 @@ Get the source code:
 ```
 git clone http://github.com/hoanghai27/bookcloner.git
 ```
+Get GoQuery package
+```
+go get github.com/PuerkitoBio/goquery
+```
 Install with [Go](http://golang.org):
 ```
 go install
