@@ -39,7 +39,7 @@ func getParams() (bool, string, string) {
 }
 
 func linkValid(url string) bool {
-	valid, _ := regexp.MatchString("http://truyenyy.com/truyen/[A-Za-z-0-9]/", url)
+	valid, _ := regexp.MatchString("http:\\/\\/truyenyy.com\\/truyen\\/(.*?)\\/", url)
 	return valid
 }
 
