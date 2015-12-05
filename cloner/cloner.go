@@ -19,12 +19,12 @@ type Chapter struct {
 func Start(url string, outFile string) {
 	outFile, _ = filepath.Abs(outFile)
 	fmt.Printf("Clone book from %s to %s? (yes/no): ", url, outFile)
-	var choise string
-	fmt.Scanf("%s", &choise)
-	if choise == "yes" {
+	var choice string
+	fmt.Scanf("%s", &choice)
+	if choice == "yes" {
 		chapters := getChapters(url)
 		fmt.Printf("Total: %d chap(s) was found\n", len(chapters))
-		saved := saveChapterContent(chapters, outFile)
+		saved := saveChapters(chapters, outFile)
 		if saved {
 			fmt.Printf("All chapter(s) was saved in %s\n", outFile)
 		} else {
@@ -78,7 +78,9 @@ func getChapters(url string) []Chapter {
 	}
 }
 
-func saveChapterContent(chaps []Chapter, outFile string) bool {
+// saveChapters save all chapters content to output file
+// It returns true if save success
+func saveChapters(chaps []Chapter, outFile string) bool {
 	chapCount := len(chaps)
 	fmt.Printf("Get %d chapter%s contents ...", chapCount, func() string {
 		if chapCount > 1 {
@@ -94,6 +96,18 @@ func saveChapterContent(chaps []Chapter, outFile string) bool {
 		return false
 	}
 
+	// build bookmarks
+	bookmarks := getTheBookmark(chaps)
+
+	// Write HTML header
+
+	file.WriteString("<html>\n")
+	file.WriteString("<head>\n")
+	file.WriteString("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n")
+	file.WriteString("</head>\n")
+	file.WriteString("<body>\n")
+	file.WriteString(bookmarks)
+
 	// Get contents then write to file
 	for i, chap := range chaps {
 		fmt.Printf("- Downloading (%d/%d): %s ...\n", i+1, chapCount, chap.Url)
@@ -101,6 +115,9 @@ func saveChapterContent(chaps []Chapter, outFile string) bool {
 		contents := getChapterContents(i+1, chap)
 		file.WriteString(contents)
 	}
+
+	file.WriteString("</body>\n")
+	file.WriteString("</html>\n")
 
 	// Close file
 	err = file.Close()
@@ -112,6 +129,8 @@ func saveChapterContent(chaps []Chapter, outFile string) bool {
 	return true
 }
 
+// getChapterContents download content of a chapter
+// It returns content of the chapter
 func getChapterContents(order int, chap Chapter) string {
 	doc, err := goquery.NewDocument(chap.Url)
 	if err != nil {
@@ -121,4 +140,14 @@ func getChapterContents(order int, chap Chapter) string {
 		content, _ := doc.Find("#id_noidung_chuong").Html()
 		return fmt.Sprintf("<center><h3 id=\"chap-%d\">%s</h3></center>\n", order, chap.Title) + content
 	}
+}
+
+func getTheBookmark(chaps []Chapter) string {
+	html := "<h2>BOOKMARKS:</h2>\n"
+	html += "<ul>\n"
+	for i, chap := range chaps {
+		html += fmt.Sprintf("<li><a href=\"#chap-%d\">%s</a></li>", i, chap.Title)
+	}
+	html += "</ul>\n"
+	return html;
 }
