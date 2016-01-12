@@ -1,18 +1,21 @@
-package cloner
+package thichdoctruyen
 
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"path/filepath"
-	"strconv"
-	"strings"
+	"net/http"
+	"net/url"
 	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 )
 
 // Chapter
 type Chapter struct {
-	Title string
-	Url   string
+	Title   string
+	Url     string
+	Content string
 }
 
 // Start clone all of book chapters from url to output file
@@ -38,41 +41,33 @@ func Start(url string, outFile string) {
 
 // getChapters get all URL of book chapters
 // It returns URL as slice
-func getChapters(url string) []Chapter {
+func getChapters(Url string) []Chapter {
 	fmt.Printf("Getting chapter list ...\n")
-	doc, err := goquery.NewDocument(url)
+
+	// Find id
+	regex := regexp.MustCompile(`(.*)-([\d]+)$`)
+	matches := regex.FindStringSubmatch(Url)
+
+	res, err := http.PostForm("http://thichdoctruyen.com/actions/ajaxTruyen/ajaxLoadChap.php", url.Values{"id_story": {matches[2]}, "name_story": {"Anything"}})
+	if err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+		return nil
+	}
+	doc, err := goquery.NewDocumentFromResponse(res)
 	var chaps []Chapter
 	if err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 		return nil
 	} else {
 		// Find the last page of chapters
-		maxPage := 0;
-		doc.Find(".paging ul > li > a").Each(func(i int, s *goquery.Selection) {
-			page := s.Text()
-			if pageNum, err := strconv.Atoi(page); err == nil {
-				if pageNum > maxPage {
-					maxPage = pageNum
-				}
-			}
-		})
-
-		// Get chapter list
-		for i := 1; i <= maxPage; i = i + 1 {
-			page, err := goquery.NewDocument(url + "?page=" + strconv.Itoa(i))
+		doc.Find("option").Each(func(i int, s *goquery.Selection) {
+			chapUrl := matches[1] + "/" + s.AttrOr("value", "")
 			if err != nil {
 				fmt.Printf("Error: %s\n", err.Error())
-				return nil
 			} else {
-				page.Find("#dschuong > div > .jblack").Each(func(i int, s *goquery.Selection) {
-					link, _ := s.Attr("href")
-					text := strings.TrimSpace(s.Text())
-					chaps = append(chaps, Chapter{text, strings.TrimSpace(link)})
-					// fmt.Printf("Found chap %s on %s\n", text, link)
-				})
+				chaps = append(chaps, Chapter{"", chapUrl, ""})
 			}
-
-		}
+		})
 
 		return chaps
 	}
@@ -82,18 +77,22 @@ func getChapters(url string) []Chapter {
 // It returns true if save success
 func saveChapters(chaps []Chapter, outFile string) bool {
 	chapCount := len(chaps)
-	fmt.Printf("Get %d chapter%s contents ...", chapCount, func() string {
-		if chapCount > 1 {
-			return "s"
-		}
-		return ""
-	})
+	fmt.Printf("Get %d chapter(s) contents ...", chapCount)
 
 	// Create file
 	file, err := os.Create(outFile)
 	if err != nil {
 		fmt.Printf("Can not create file: %s\n", outFile)
 		return false
+	}
+
+	// Get contents then write to file
+	for i, chap := range chaps {
+		fmt.Printf("- Downloading (%d/%d): %s ...\n", i+1, chapCount, chap.Url)
+
+		title, contents := getChapterContents(i+1, chap)
+		chaps[i].Title = title
+		chaps[i].Content = contents
 	}
 
 	// build bookmarks
@@ -109,11 +108,8 @@ func saveChapters(chaps []Chapter, outFile string) bool {
 	file.WriteString(bookmarks)
 
 	// Get contents then write to file
-	for i, chap := range chaps {
-		fmt.Printf("- Downloading (%d/%d): %s ...\n", i+1, chapCount, chap.Url)
-
-		contents := getChapterContents(i+1, chap)
-		file.WriteString(contents)
+	for _, chap := range chaps {
+		file.WriteString(chap.Content)
 	}
 
 	file.WriteString("</body>\n")
@@ -131,14 +127,15 @@ func saveChapters(chaps []Chapter, outFile string) bool {
 
 // getChapterContents download content of a chapter
 // It returns content of the chapter
-func getChapterContents(order int, chap Chapter) string {
+func getChapterContents(order int, chap Chapter) (string, string) {
 	doc, err := goquery.NewDocument(chap.Url)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
-		return ""
+		return "", ""
 	} else {
-		content, _ := doc.Find("#id_noidung_chuong").Html()
-		return fmt.Sprintf("<center><h3 id=\"chap-%d\">%s</h3></center>\n", order, chap.Title) + content
+		chapTitle := strings.Trim(doc.Find("p.tenchuong").Text(), " \n\r\t")
+		content, _ := doc.Find(".boxview").Html()
+		return chapTitle, fmt.Sprintf("<center><h3 id=\"chap-%d\">%s</h3></center>\n", order, chapTitle) + content
 	}
 }
 
@@ -149,5 +146,5 @@ func getTheBookmark(chaps []Chapter) string {
 		html += fmt.Sprintf("<li><a href=\"#chap-%d\">%s</a></li>", i, chap.Title)
 	}
 	html += "</ul>\n"
-	return html;
+	return html
 }
